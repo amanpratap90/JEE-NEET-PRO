@@ -54,7 +54,7 @@ const MockTestPage = () => {
                 if (fetchingRef.current) return;
                 fetchingRef.current = true;
 
-                const cacheKey = `questions - ${exam} -${routeTestId} `;
+                const cacheKey = `questions-${exam}-${routeTestId}`;
                 const cachedQuestions = getCachedData(cacheKey);
 
                 if (cachedQuestions) {
@@ -69,7 +69,7 @@ const MockTestPage = () => {
 
                 try {
                     // Fetch questions for this "Test Series" chapter
-                    const res = await api.get(`${API_BASE_URL} /api/v1 / resources / questions`, {
+                    const res = await api.get(`/api/v1/resources/questions`, {
                         params: {
                             exam: exam.toLowerCase(),
                             subject: 'test series', // Assuming 'test series' is the subject for mock tests

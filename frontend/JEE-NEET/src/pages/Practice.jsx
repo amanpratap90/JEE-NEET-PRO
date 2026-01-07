@@ -46,9 +46,9 @@ function Practice() {
     const { currentQuestionIndex, selectedOption, isSubmitted, responses } = useSelector((state) => state.practice);
 
     // Cache key
-    const cacheKey = `practice - questions - ${exam} -${subject} -${chapter} `;
+    const cacheKey = `practice-questions-${exam}-${subject}-${chapter}`;
     // We use a unique key for progress persistence
-    const progressKey = `practice - progress - ${exam} -${subject} -${chapter} `;
+    const progressKey = `practice-progress-${exam}-${subject}-${chapter}`;
 
     const cachedQuestions = useSelector((state) => state.content.questions[cacheKey]);
 
@@ -95,15 +95,15 @@ function Practice() {
             setLoading(true);
             try {
                 // Determine exam/subject if not detected (fallback logic could be improved)
-                const exam = 'jee-mains';
-                const subject = 'physics';
+                const examParam = exam || 'jee-mains';
+                const subjectParam = subject || 'physics';
 
                 const encodedChapter = encodeURIComponent(chapter);
-                const res = await api.get(`/ api / v1 / resources / questions`, {
+                const res = await api.get(`/api/v1/resources/questions`, {
                     params: {
-                        exam: encodeURIComponent(exam),
-                        subject: encodeURIComponent(subject),
-                        chapter: encodedChapter
+                        exam: examParam,
+                        subject: subjectParam,
+                        chapter: chapter
                     }
                 });
                 const data = res.data;
