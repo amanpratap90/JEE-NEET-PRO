@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getCachedData, setCachedData } from '../utils/apiCache';
+import { API_BASE_URL } from '../utils/config';
 
 const TestSeries = () => {
     console.log("TestSeries Component Rendered");
@@ -24,7 +25,7 @@ const TestSeries = () => {
             try {
                 // Fetch chapters for the special subject 'Test Series'
                 console.log(`Fetching tests for ${selectedExam}`);
-                const res = await fetch(`/api/v1/resources/chapters?exam=${selectedExam}&subject=${encodeURIComponent('test series')}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${selectedExam}&subject=${encodeURIComponent('test series')}`);
                 const data = await res.json();
                 console.log("Fetch result:", data);
 

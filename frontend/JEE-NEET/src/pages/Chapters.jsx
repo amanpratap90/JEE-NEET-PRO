@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useDispatch, useSelector } from 'react-redux';
 import { setChaptersCache } from '../store/contentSlice';
 import { getCachedData, setCachedData } from '../utils/apiCache';
+import { API_BASE_URL } from '../utils/config';
 
 const ChapterCard = ({ ch, index, onClick }) => (
     <div
@@ -70,7 +71,7 @@ function Chapters() {
                 const token = localStorage.getItem('token');
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-                const res = await fetch(`/api/v1/resources/chapters?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}`, {
+                const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}`, {
                     headers
                 });
                 const data = await res.json();

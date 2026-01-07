@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { API_BASE_URL } from '../utils/config';
 
 const AdminDashboard = () => {
     const [step, setStep] = useState(1);
@@ -56,7 +57,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/v1/resources/questions', {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -95,7 +96,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/v1/resources', {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +134,7 @@ const AdminDashboard = () => {
         const s = subjectOverride || manageSubject;
         if (!e || !s) return;
         try {
-            const res = await fetch(`/api/v1/resources/chapters?exam=${e}&subject=${s}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${e}&subject=${s}`);
             const data = await res.json();
             setChapterList(data.data.chapters);
         } catch (err) {
@@ -157,7 +158,7 @@ const AdminDashboard = () => {
         }
 
         try {
-            const res = await fetch(`/api/v1/resources/questions?exam=${e}&subject=${s}&chapter=${c}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${e}&subject=${s}&chapter=${c}`);
             const data = await res.json();
             questionsCache.current[cacheKey] = data.data.questions; // Cache the result
             setQuestionsList(data.data.questions);
@@ -170,7 +171,7 @@ const AdminDashboard = () => {
         if (!newChapterName || !manageChapter) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/v1/resources/chapters/rename', {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters/rename`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -201,7 +202,7 @@ const AdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to delete chapter "${manageChapter}" and ALL its content? This cannot be undone.`)) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/v1/resources/chapters/delete', {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters/delete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ const AdminDashboard = () => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/v1/resources/questions/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -268,7 +269,7 @@ const AdminDashboard = () => {
                 formData.append('image', editQuestionImage);
             }
 
-            const res = await fetch(`/api/v1/resources/questions/${editingQuestion._id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/${editingQuestion._id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`

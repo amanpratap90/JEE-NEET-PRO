@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/config';
 
 import { exams } from '../data/Exams';
 
@@ -54,7 +55,7 @@ const ResourceList = ({ type, title }) => {
                     type: backendType
                 });
 
-                const res = await fetch(`/api/v1/resources?${query.toString()}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/resources?${query.toString()}`);
                 const data = await res.json();
 
                 if (data.status === 'success') {

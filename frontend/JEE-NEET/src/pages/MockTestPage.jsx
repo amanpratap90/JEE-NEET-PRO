@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCachedData, setCachedData, saveTestState, getTestState, clearTestState } from '../utils/apiCache';
+import { API_BASE_URL } from '../utils/config';
 import {
     initializeTest,
     restoreTest,
@@ -68,7 +69,7 @@ const MockTestPage = () => {
 
                 try {
                     // Fetch questions for this "Test Series" chapter
-                    const res = await fetch(`/api/v1/resources/questions?exam=${exam.toLowerCase()}&subject=test series&chapter=${routeTestId}`);
+                    const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${exam.toLowerCase()}&subject=test series&chapter=${routeTestId}`);
                     const data = await res.json();
 
                     if (data.status === 'success') {

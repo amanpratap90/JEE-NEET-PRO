@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, memo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCachedData, setCachedData, saveTestState, getTestState } from '../utils/apiCache'; // Reusing saveTestState for practice too
+import { API_BASE_URL } from '../utils/config';
 import {
     setQuestionIndex,
     selectOption,
@@ -97,7 +98,7 @@ function Practice() {
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
                 const encodedChapter = encodeURIComponent(chapter);
-                const res = await fetch(`/api/v1/resources/questions?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}&chapter=${encodedChapter}`, {
+                const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}&chapter=${encodedChapter}`, {
                     headers
                 });
                 const data = await res.json();
