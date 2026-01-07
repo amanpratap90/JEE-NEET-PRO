@@ -65,3 +65,45 @@ export const clearCache = () => {
     // Optional: decided if we want to clear all localStorage or just api keys.
     // For now, leaving localStorage alone on manual clear unless specified.
 };
+
+export const removeCachedData = (key) => {
+    console.log(`[Cache Remove] ${key}`);
+    apiCache.delete(key);
+    try {
+        localStorage.removeItem(key);
+    } catch (e) { }
+};
+
+// Cache Versioning (Global Busting)
+const CACHE_VERSION = 'v1.0.1'; // Increment this to force-clear client caches
+
+export const checkCacheVersion = () => {
+    try {
+        const storedVersion = localStorage.getItem('app_cache_version');
+        if (storedVersion !== CACHE_VERSION) {
+            console.log(`[Cache Version Mismatch] Clearing stale data. New: ${CACHE_VERSION}, Old: ${storedVersion}`);
+
+            // Clear only content keys, preserve auth (token, user)
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (
+                    key.startsWith('chapters-') ||
+                    key.startsWith('resources-') ||
+                    key.startsWith('practice-questions-') ||
+                    key.startsWith('practice-progress-')
+                )) {
+                    keysToRemove.push(key);
+                }
+            }
+
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            apiCache.clear(); // Clear memory too
+
+            localStorage.setItem('app_cache_version', CACHE_VERSION);
+            console.log(`[Cache Cleared] Removed ${keysToRemove.length} stale entries.`);
+        }
+    } catch (e) {
+        console.warn("Failed to check cache version", e);
+    }
+};

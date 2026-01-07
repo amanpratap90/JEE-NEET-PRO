@@ -22,10 +22,15 @@ const contentSlice = createSlice({
         clearCache: (state) => {
             state.chapters = {};
             state.questions = {};
+        },
+        invalidateCache: (state, action) => {
+            const key = action.payload;
+            if (state.chapters[key]) delete state.chapters[key];
+            if (state.questions[key]) delete state.questions[key];
         }
     },
 });
 
-export const { setChaptersCache, setQuestionsCache, clearCache } = contentSlice.actions;
+export const { setChaptersCache, setQuestionsCache, clearCache, invalidateCache } = contentSlice.actions;
 
 export default contentSlice.reducer;

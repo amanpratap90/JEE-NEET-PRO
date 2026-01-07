@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import api from '../utils/api';
+import { API_BASE_URL } from '../utils/config';
+import { removeCachedData } from '../utils/apiCache';
+import { invalidateCache } from '../store/contentSlice';
 
 const AdminDashboard = () => {
+    const dispatch = useDispatch();
     const [step, setStep] = useState(1);
     const [exam, setExam] = useState('');
     const [subject, setSubject] = useState('');
@@ -57,16 +62,28 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`
                     // Content-Type not set for FormData
                 },
                 body: formData
             });
             const data = await res.json();
             if (data.status === 'success') {
+                // Clear Cache
+                removeCachedData(`chapters-${exam}-${subject.toLowerCase()}`);
+                removeCachedData(`practice-questions-${exam}-${subject.toLowerCase()}-${chapter}`);
+                dispatch(invalidateCache(`chapters-${exam}-${subject.toLowerCase()}`));
+                dispatch(invalidateCache(`practice-questions-${exam}-${subject.toLowerCase()}-${chapter}`));
+
+                // Clear Internal Admin Cache
+                const internalCacheKey = `${exam}-${subject.toLowerCase()}-${chapter}`;
+                if (questionsCache.current[internalCacheKey]) {
+                    delete questionsCache.current[internalCacheKey];
+                }
+
                 alert('Question added successfully!');
                 setQuestionData({
                     questionText: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: '', solution: ''
@@ -96,16 +113,20 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (data.status === 'success') {
+                // Clear Cache
+                removeCachedData(`chapters-${exam}-${subject.toLowerCase()}`);
+                dispatch(invalidateCache(`chapters-${exam}-${subject.toLowerCase()}`));
+
                 alert('Resource added successfully!');
                 setFileData({ title: '', description: '', fileUrl: '' });
             } else {
@@ -134,7 +155,7 @@ const AdminDashboard = () => {
         const s = subjectOverride || manageSubject;
         if (!e || !s) return;
         try {
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / chapters ? exam = ${e}& subject=${s} `);
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${e}&subject=${s}`);
             const data = await res.json();
             setChapterList(data.data.chapters);
         } catch (err) {
@@ -151,14 +172,14 @@ const AdminDashboard = () => {
 
         if (!e || !s || !c) return;
 
-        const cacheKey = `${e} -${s} -${c} `;
+        const cacheKey = `${e}-${s}-${c}`;
         if (questionsCache.current[cacheKey]) {
             setQuestionsList(questionsCache.current[cacheKey]);
             return; // Use cached data
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions ? exam = ${e}& subject=${s}& chapter=${c} `);
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${e}&subject=${s}&chapter=${c}`);
             const data = await res.json();
             questionsCache.current[cacheKey] = data.data.questions; // Cache the result
             setQuestionsList(data.data.questions);
@@ -171,11 +192,11 @@ const AdminDashboard = () => {
         if (!newChapterName || !manageChapter) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / chapters / rename`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters/rename`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     exam: manageExam,
@@ -187,6 +208,14 @@ const AdminDashboard = () => {
             const data = await res.json();
             if (data.status === 'success') {
                 alert('Chapter renamed successfully');
+                // Clear Cache
+                removeCachedData(`chapters-${manageExam}-${manageSubject.toLowerCase()}`);
+                removeCachedData(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${manageChapter}`);
+                removeCachedData(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${newChapterName}`);
+                dispatch(invalidateCache(`chapters-${manageExam}-${manageSubject.toLowerCase()}`));
+                dispatch(invalidateCache(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${manageChapter}`));
+                dispatch(invalidateCache(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${newChapterName}`));
+
                 setIsEditingChapter(false);
                 setManageChapter(newChapterName);
                 fetchChapters();
@@ -208,12 +237,18 @@ const AdminDashboard = () => {
                 chapter: manageChapter
             }, {
                 headers: {
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`,
                 },
             });
             const data = res.data;
             if (data.status === 'success') {
                 alert(data.message);
+                // Clear Cache
+                removeCachedData(`chapters-${manageExam}-${manageSubject.toLowerCase()}`);
+                removeCachedData(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${manageChapter}`);
+                dispatch(invalidateCache(`chapters-${manageExam}-${manageSubject.toLowerCase()}`));
+                dispatch(invalidateCache(`practice-questions-${manageExam}-${manageSubject.toLowerCase()}-${manageChapter}`));
+
                 setManageChapter('');
                 fetchChapters();
             } else {
@@ -228,16 +263,20 @@ const AdminDashboard = () => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await api.delete(`/ api / v1 / resources / questions / ${id} `, {
-                headers: { 'Authorization': `Bearer ${token} ` }
+            const res = await api.delete(`/api/v1/resources/questions/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.status === 200) { // Axios uses status codes directly
                 const newList = questionsList.filter(q => q._id !== id);
                 setQuestionsList(newList);
 
+                // Clear Cache
+                removeCachedData(`practice-questions-${manageExam}-${manageSubject}-${manageChapter}`);
+                dispatch(invalidateCache(`practice-questions-${manageExam}-${manageSubject}-${manageChapter}`));
+
                 // Update Cache
-                const cacheKey = `${manageExam} -${manageSubject} -${manageChapter} `;
+                const cacheKey = `${manageExam}-${manageSubject}-${manageChapter}`;
                 if (questionsCache.current[cacheKey]) {
                     questionsCache.current[cacheKey] = newList;
                 }
@@ -265,10 +304,10 @@ const AdminDashboard = () => {
                 formData.append('image', editQuestionImage);
             }
 
-            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions / ${editingQuestion._id} `, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/${editingQuestion._id}`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`
                 },
                 body: formData
             });
@@ -279,8 +318,12 @@ const AdminDashboard = () => {
                 setEditQuestionImage(null);
 
                 // Invalidate Cache for current selection so it refetches fresh data
-                const cacheKey = `${manageExam} -${manageSubject} -${manageChapter} `;
+                const cacheKey = `${manageExam}-${manageSubject}-${manageChapter}`;
                 delete questionsCache.current[cacheKey];
+
+                // Clear Student Cache
+                removeCachedData(`practice-questions-${manageExam}-${manageSubject}-${manageChapter}`);
+                dispatch(invalidateCache(`practice-questions-${manageExam}-${manageSubject}-${manageChapter}`));
 
                 fetchQuestions();
             }
@@ -407,8 +450,8 @@ const AdminDashboard = () => {
                                                 key={opt}
                                                 type="text"
                                                 placeholder={`Option ${opt} `}
-                                                value={questionData[`option${opt} `]}
-                                                onChange={(e) => setQuestionData({ ...questionData, [`option${opt} `]: e.target.value })}
+                                                value={questionData[`option${opt}`]}
+                                                onChange={(e) => setQuestionData({ ...questionData, [`option${opt}`]: e.target.value })}
                                                 required
                                                 style={{ padding: '0.8rem', background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '8px' }}
                                             />

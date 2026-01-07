@@ -41,7 +41,7 @@ function Chapters() {
     const dispatch = useDispatch();
     const { user } = useAuth();
 
-    const cacheKey = `chapters-${exam}-${subject}`;
+    const cacheKey = `chapters-${exam.toLowerCase()}-${subject.toLowerCase()}`;
     const cachedChapters = useSelector((state) => state.content.chapters[cacheKey]);
 
     const [chapters, setChapters] = useState(cachedChapters || []); // Renamed chapterList to chapters
@@ -50,8 +50,8 @@ function Chapters() {
 
     useEffect(() => {
         // Cache Check
-        const examVal = exam; // Use exam from useParams
-        const subjectVal = subject; // Use subject from useParams
+        const examVal = exam.toLowerCase();
+        const subjectVal = subject.toLowerCase();
         const currentCacheKey = `chapters-${examVal}-${subjectVal}`; // Use a distinct name to avoid conflict with outer scope cacheKey
 
         // 1. Check Memory Cache (Redux)
@@ -64,8 +64,10 @@ function Chapters() {
         // 2. Fetch if not cached
         const fetchChapters = async () => {
             // 2a. Check LocalStorage before API
+            // 2a. Check LocalStorage before API
             const localData = getCachedData(currentCacheKey);
-            if (localData) {
+            // Only use local cache if it has items. If empty, try fetching again in case new items were added.
+            if (localData && localData.length > 0) {
                 setChapters(localData);
                 dispatch(setChaptersCache({ key: currentCacheKey, data: localData }));
                 setLoading(false);
@@ -130,13 +132,13 @@ function Chapters() {
             </div>
 
             <div className="chapters-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '800px', margin: '0 auto' }}>
-                {chapterList.length > 0 ? (
-                    chapterList.map((ch, index) => (
+                {chapters.length > 0 ? (
+                    chapters.map((ch, index) => (
                         <ChapterCard
                             key={ch}
                             ch={ch}
                             index={index}
-                            onClick={() => navigate(`/${exam}/subjects/${subject}/${ch}`)}
+                            onClick={() => navigate(`/${exam.toLowerCase()}/subjects/${subject.toLowerCase()}/${ch}`)}
                         />
                     ))
                 ) : (

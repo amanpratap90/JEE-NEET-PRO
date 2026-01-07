@@ -22,7 +22,7 @@ const Signup = () => {
             const data = res.data;
 
             if (data.status === 'success') {
-                login(data.token, data.user.name);
+                login({ token: data.token, user: data.data.user });
                 navigate('/');
             } else {
                 setError(data.message || 'Signup failed');

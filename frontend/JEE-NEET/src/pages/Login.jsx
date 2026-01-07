@@ -15,6 +15,23 @@ const Login = () => {
     // Redirect to where they wanted to go, or home
     const from = location.state?.from?.pathname || '/';
 
+    // Auto-login check for returning users (restores session if data exists)
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+
+        if (token && savedUser && !user) {
+            // Data exists but session was closed. Restore it now.
+            try {
+                login({ token, user: JSON.parse(savedUser) });
+            } catch (e) {
+                // If JSON parse fails, clear invalid data
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        }
+    }, []); // Run once on mount
+
     useEffect(() => {
         if (user) {
             if (user.role === 'admin') {

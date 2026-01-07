@@ -5,7 +5,7 @@ import api from '../utils/api';
 
 import { exams } from '../data/Exams';
 
-import PDFViewer from '../Components/PDFViewer';
+import PDFViewer from '../components/PDFViewer';
 
 const ResourceList = ({ type, title }) => {
     const { exam } = useParams();
@@ -50,9 +50,9 @@ const ResourceList = ({ type, title }) => {
             setError(null);
 
             // Cache check
-            const cacheKey = `resources-${selectedExam}-${selectedSubject}-${type}`;
+            const cacheKey = `resources-${selectedExam.toLowerCase()}-${selectedSubject.toLowerCase()}-${type}`;
             const cached = getCachedData(cacheKey); // Assuming getCachedData is defined elsewhere
-            if (cached) {
+            if (cached && cached.length > 0) {
                 setResourceList(cached); // Assuming setResources is setResourceList
                 setLoading(false);
                 return;
@@ -60,8 +60,8 @@ const ResourceList = ({ type, title }) => {
 
             try {
                 // Ensure default values to avoid 404 or bad request
-                const ex = selectedExam || 'jee-mains';
-                const sub = selectedSubject || 'physics';
+                const ex = selectedExam ? selectedExam.toLowerCase() : 'jee-mains';
+                const sub = selectedSubject ? selectedSubject.toLowerCase() : 'physics';
                 const resourceType = getBackendType(type) || 'notes'; // Using getBackendType for 'type'
 
                 const res = await api.get(`/api/v1/resources?exam=${ex}&subject=${sub}&type=${resourceType}`); // Assuming api is imported

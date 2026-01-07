@@ -1,5 +1,5 @@
-import Hero from "../Components/Hero";
-import Highlights from "../Components/Highlights";
+import Hero from "../components/Hero";
+import Highlights from "../components/Highlights";
 import ExamSelect from "./ExamSelect";
 
 export default function Home() {

@@ -46,9 +46,9 @@ function Practice() {
     const { currentQuestionIndex, selectedOption, isSubmitted, responses } = useSelector((state) => state.practice);
 
     // Cache key
-    const cacheKey = `practice-questions-${exam}-${subject}-${chapter}`;
+    const cacheKey = `practice-questions-${exam.toLowerCase()}-${subject.toLowerCase()}-${chapter}`;
     // We use a unique key for progress persistence
-    const progressKey = `practice-progress-${exam}-${subject}-${chapter}`;
+    const progressKey = `practice-progress-${exam.toLowerCase()}-${subject.toLowerCase()}-${chapter}`;
 
     const cachedQuestions = useSelector((state) => state.content.questions[cacheKey]);
 
@@ -84,7 +84,7 @@ function Practice() {
 
             // Check persistence cache (localStorage) for questions
             const localCached = getCachedData(cacheKey);
-            if (localCached) {
+            if (localCached && localCached.length > 0) {
                 setQList(localCached);
                 dispatch(setQuestionsCache({ key: cacheKey, data: localCached }));
                 setLoading(false);
@@ -95,8 +95,8 @@ function Practice() {
             setLoading(true);
             try {
                 // Determine exam/subject if not detected (fallback logic could be improved)
-                const examParam = exam || 'jee-mains';
-                const subjectParam = subject || 'physics';
+                const examParam = exam ? exam.toLowerCase() : 'jee-mains';
+                const subjectParam = subject ? subject.toLowerCase() : 'physics';
 
                 const encodedChapter = encodeURIComponent(chapter);
                 const res = await api.get(`/api/v1/resources/questions`, {
@@ -303,6 +303,14 @@ function Practice() {
                                 onClick={handleClearSelection}
                             >
                                 Clear Selection
+                            </button>
+                            <button
+                                className="auth-btn"
+                                style={{ backgroundColor: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)' }}
+                                onClick={handleNextQuestion}
+                                disabled={currentQuestionIndex === qList.length - 1}
+                            >
+                                Skip
                             </button>
                             <button
                                 className="auth-btn"

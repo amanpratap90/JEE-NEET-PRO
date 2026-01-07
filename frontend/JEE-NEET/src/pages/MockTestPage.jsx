@@ -229,11 +229,10 @@ const MockTestPage = () => {
                         {Object.keys(questions).map(sub => (
                             <button
                                 key={sub}
-                                className={`sub - tab ${currentSubject === sub ? 'active' : ''} `}
+                                className={`sub-tab ${currentSubject === sub ? 'active' : ''}`}
                                 onClick={() => dispatch(switchSubject(sub))}
                             >
                                 {sub}
-                                <span className="info-icon">i</span>
                             </button>
                         ))}
                     </div>
@@ -252,7 +251,7 @@ const MockTestPage = () => {
 
                         <div className="cbt-options">
                             {currentQuestion.options.map((opt, idx) => (
-                                <label key={idx} className={`cbt - option - label ${localSelection === opt ? 'selected' : ''} `}>
+                                <label key={idx} className={`cbt-option-label ${localSelection === opt ? 'selected' : ''}`}>
                                     <input
                                         type="radio"
                                         name="option"
@@ -315,7 +314,7 @@ const MockTestPage = () => {
                             return (
                                 <button
                                     key={idx}
-                                    className={`palette - btn ${status} ${currentQuestionIndex === idx ? 'current' : ''} `}
+                                    className={`palette-btn ${status} ${currentQuestionIndex === idx ? 'current' : ''}`}
                                     onClick={() => dispatch(jumpToQuestion(idx))}
                                 >
                                     {idx + 1}
