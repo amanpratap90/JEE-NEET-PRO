@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCachedData, setCachedData, saveTestState, getTestState, clearTestState } from '../utils/apiCache';
-import { API_BASE_URL } from '../utils/config';
+import api from '../utils/api';
 import {
     initializeTest,
     restoreTest,
@@ -54,7 +54,7 @@ const MockTestPage = () => {
                 if (fetchingRef.current) return;
                 fetchingRef.current = true;
 
-                const cacheKey = `questions-${exam}-${routeTestId}`;
+                const cacheKey = `questions - ${exam} -${routeTestId} `;
                 const cachedQuestions = getCachedData(cacheKey);
 
                 if (cachedQuestions) {
@@ -69,8 +69,14 @@ const MockTestPage = () => {
 
                 try {
                     // Fetch questions for this "Test Series" chapter
-                    const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${exam.toLowerCase()}&subject=test series&chapter=${routeTestId}`);
-                    const data = await res.json();
+                    const res = await api.get(`${API_BASE_URL} /api/v1 / resources / questions`, {
+                        params: {
+                            exam: exam.toLowerCase(),
+                            subject: 'test series', // Assuming 'test series' is the subject for mock tests
+                            chapter: routeTestId
+                        }
+                    });
+                    const data = res.data; // Axios puts response data in .data
 
                     if (data.status === 'success') {
                         // Group questions by "Test Series" (or potentially multiple sections)
@@ -145,7 +151,7 @@ const MockTestPage = () => {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
-        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} `;
     };
 
     // Local selection state for current question (before saving)
@@ -153,7 +159,7 @@ const MockTestPage = () => {
 
     // Sync local selection when changing questions
     useEffect(() => {
-        setLocalSelection(responses[`${currentSubject}-${currentQuestionIndex}`]?.selectedOption || null);
+        setLocalSelection(responses[`${currentSubject} -${currentQuestionIndex} `]?.selectedOption || null);
     }, [currentSubject, currentQuestionIndex, responses]);
 
     if (!questions[currentSubject] || questions[currentSubject].length === 0) {
@@ -161,7 +167,7 @@ const MockTestPage = () => {
     }
 
     const currentQuestion = questions[currentSubject][currentQuestionIndex];
-    const QID = `${currentSubject}-${currentQuestionIndex}`;
+    const QID = `${currentSubject} -${currentQuestionIndex} `;
 
     // Handlers
     const handleSaveNext = () => {
@@ -192,7 +198,7 @@ const MockTestPage = () => {
             <div className="container page" style={{ textAlign: 'center', paddingTop: '5rem' }}>
                 <h1>Test Submitted Successfully!</h1>
                 <p>Your result analysis will be displayed here.</p>
-                <button className="auth-btn" onClick={() => navigate(`/${exam}`)}>Back to Dashboard</button>
+                <button className="auth-btn" onClick={() => navigate(`/ ${exam} `)}>Back to Dashboard</button>
             </div>
         );
     }
@@ -223,7 +229,7 @@ const MockTestPage = () => {
                         {Object.keys(questions).map(sub => (
                             <button
                                 key={sub}
-                                className={`sub-tab ${currentSubject === sub ? 'active' : ''}`}
+                                className={`sub - tab ${currentSubject === sub ? 'active' : ''} `}
                                 onClick={() => dispatch(switchSubject(sub))}
                             >
                                 {sub}
@@ -246,7 +252,7 @@ const MockTestPage = () => {
 
                         <div className="cbt-options">
                             {currentQuestion.options.map((opt, idx) => (
-                                <label key={idx} className={`cbt-option-label ${localSelection === opt ? 'selected' : ''}`}>
+                                <label key={idx} className={`cbt - option - label ${localSelection === opt ? 'selected' : ''} `}>
                                     <input
                                         type="radio"
                                         name="option"
@@ -304,12 +310,12 @@ const MockTestPage = () => {
 
                     <div className="question-grid">
                         {questions[currentSubject].map((_, idx) => {
-                            const qid = `${currentSubject}-${idx}`;
+                            const qid = `${currentSubject} -${idx} `;
                             const status = responses[qid]?.status || 'not-visited';
                             return (
                                 <button
                                     key={idx}
-                                    className={`palette-btn ${status} ${currentQuestionIndex === idx ? 'current' : ''}`}
+                                    className={`palette - btn ${status} ${currentQuestionIndex === idx ? 'current' : ''} `}
                                     onClick={() => dispatch(jumpToQuestion(idx))}
                                 >
                                     {idx + 1}

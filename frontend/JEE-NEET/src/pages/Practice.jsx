@@ -1,8 +1,8 @@
 import { useRef, useCallback, useEffect, memo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import api from '../utils/api'; // Import the axios instance
 import { getCachedData, setCachedData, saveTestState, getTestState } from '../utils/apiCache'; // Reusing saveTestState for practice too
-import { API_BASE_URL } from '../utils/config';
 import {
     setQuestionIndex,
     selectOption,
@@ -46,9 +46,9 @@ function Practice() {
     const { currentQuestionIndex, selectedOption, isSubmitted, responses } = useSelector((state) => state.practice);
 
     // Cache key
-    const cacheKey = `practice-questions-${exam}-${subject}-${chapter}`;
+    const cacheKey = `practice - questions - ${exam} -${subject} -${chapter} `;
     // We use a unique key for progress persistence
-    const progressKey = `practice-progress-${exam}-${subject}-${chapter}`;
+    const progressKey = `practice - progress - ${exam} -${subject} -${chapter} `;
 
     const cachedQuestions = useSelector((state) => state.content.questions[cacheKey]);
 
@@ -94,25 +94,31 @@ function Practice() {
             fetchingRef.current = true;
             setLoading(true);
             try {
-                const token = localStorage.getItem('token');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                // Determine exam/subject if not detected (fallback logic could be improved)
+                const exam = 'jee-mains';
+                const subject = 'physics';
 
                 const encodedChapter = encodeURIComponent(chapter);
-                const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}&chapter=${encodedChapter}`, {
-                    headers
+                const res = await api.get(`/ api / v1 / resources / questions`, {
+                    params: {
+                        exam: encodeURIComponent(exam),
+                        subject: encodeURIComponent(subject),
+                        chapter: encodedChapter
+                    }
                 });
-                const data = await res.json();
+                const data = res.data;
 
                 if (data.status === 'success') {
                     setQList(data.data.questions);
                     dispatch(setQuestionsCache({ key: cacheKey, data: data.data.questions }));
                     setCachedData(cacheKey, data.data.questions); // Save to storage
                 } else {
-                    setError(data.message || 'Failed to load questions');
+                    setError(data.message || 'Failed to fetch questions');
                 }
             } catch (err) {
+                // Axios error handling
                 console.error(err);
-                setError('Error loading questions');
+                setError('Failed to load questions. Please try again.');
             } finally {
                 setLoading(false);
                 fetchingRef.current = false;

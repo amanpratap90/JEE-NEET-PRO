@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/config';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getCachedData, setCachedData } from '../utils/apiCache';
+import api from '../utils/api';
 
 import { exams } from '../data/Exams';
 
@@ -47,19 +48,28 @@ const ResourceList = ({ type, title }) => {
         const fetchResources = async () => {
             setLoading(true);
             setError(null);
-            try {
-                const backendType = getBackendType(type);
-                const query = new URLSearchParams({
-                    exam: selectedExam,
-                    subject: selectedSubject.toLowerCase(),
-                    type: backendType
-                });
 
-                const res = await fetch(`${API_BASE_URL}/api/v1/resources?${query.toString()}`);
-                const data = await res.json();
+            // Cache check
+            const cacheKey = `resources-${selectedExam}-${selectedSubject}-${type}`;
+            const cached = getCachedData(cacheKey); // Assuming getCachedData is defined elsewhere
+            if (cached) {
+                setResourceList(cached); // Assuming setResources is setResourceList
+                setLoading(false);
+                return;
+            }
+
+            try {
+                // Ensure default values to avoid 404 or bad request
+                const ex = selectedExam || 'jee-mains';
+                const sub = selectedSubject || 'physics';
+                const resourceType = getBackendType(type) || 'notes'; // Using getBackendType for 'type'
+
+                const res = await api.get(`/api/v1/resources?exam=${ex}&subject=${sub}&type=${resourceType}`); // Assuming api is imported
+                const data = res.data;
 
                 if (data.status === 'success') {
-                    setResourceList(data.data.resources);
+                    setResourceList(data.data.resources); // Assuming setResources is setResourceList
+                    setCachedData(cacheKey, data.data.resources); // Assuming setCachedData is defined elsewhere
                 } else {
                     setError('Failed to fetch resources');
                 }
@@ -71,8 +81,10 @@ const ResourceList = ({ type, title }) => {
             }
         };
 
-        fetchResources();
-    }, [selectedExam, selectedSubject, type]);
+        if (selectedExam && selectedSubject) { // Changed condition to match instruction's implied logic
+            fetchResources();
+        }
+    }, [selectedExam, selectedSubject, type]); // Dependencies updated to reflect variables used in fetchResources
 
     // Memoize the list of subjects for the selected exam
     const subjects = useMemo(() => {

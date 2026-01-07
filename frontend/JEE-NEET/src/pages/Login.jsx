@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/config';
+import api from '../utils/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -31,25 +31,24 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
+            const res = await api.post('/api/v1/auth/login', { email, password });
+            const data = res.data; // data is { status: 'success', token, data: { user } }
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+            // Axios throws an error for non-2xx responses, so we don't need to check response.ok
+            // We can check the status from the backend's response body if it's part of the contract
+            if (data.status === 'success') {
+                login({ user: data.data.user, token: data.token });
+                // Navigation handled by useEffect
+            } else {
+                // This case might not be reached if axios throws on non-success status codes
+                // but it's good for explicit backend-defined errors within a 2xx response
+                setError(data.message || 'Login failed');
             }
-
-            // Backend returns { status: 'success', token, data: { user } }
-            login({ user: data.data.user, token: data.token });
-            // Navigation handled by useEffect
         } catch (err) {
-            setError(err.message);
+            // Axios throws on error status codes (e.g., 400, 401, 500)
+            // The error message from the backend is typically in err.response.data.message
+            const msg = err.response?.data?.message || err.message || 'Something went wrong';
+            setError(msg);
         } finally {
             setLoading(false);
         }

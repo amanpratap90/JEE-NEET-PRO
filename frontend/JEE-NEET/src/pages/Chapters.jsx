@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useDispatch, useSelector } from 'react-redux';
 import { setChaptersCache } from '../store/contentSlice';
 import { getCachedData, setCachedData } from '../utils/apiCache';
-import { API_BASE_URL } from '../utils/config';
+import api from '../utils/api';
 
 const ChapterCard = ({ ch, index, onClick }) => (
     <div
@@ -44,57 +44,62 @@ function Chapters() {
     const cacheKey = `chapters-${exam}-${subject}`;
     const cachedChapters = useSelector((state) => state.content.chapters[cacheKey]);
 
-    const [chapterList, setChapterList] = useState(cachedChapters || []);
-    const [loading, setLoading] = useState(!cachedChapters);
+    const [chapters, setChapters] = useState(cachedChapters || []); // Renamed chapterList to chapters
+    const [loading, setLoading] = useState(!cachedChapters); // Initialized based on cache
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // 1. Check Memory Cache
+        // Cache Check
+        const examVal = exam; // Use exam from useParams
+        const subjectVal = subject; // Use subject from useParams
+        const currentCacheKey = `chapters-${examVal}-${subjectVal}`; // Use a distinct name to avoid conflict with outer scope cacheKey
+
+        // 1. Check Memory Cache (Redux)
         if (cachedChapters) {
-            setChapterList(cachedChapters);
+            setChapters(cachedChapters);
             setLoading(false);
-            return;
+            return; // Stop here if cached
         }
 
+        // 2. Fetch if not cached
         const fetchChapters = async () => {
-            // 2. Check Persistence Cache
-            const localCached = getCachedData(cacheKey);
-            if (localCached) {
-                setChapterList(localCached);
-                dispatch(setChaptersCache({ key: cacheKey, data: localCached }));
+            // 2a. Check LocalStorage before API
+            const localData = getCachedData(currentCacheKey);
+            if (localData) {
+                setChapters(localData);
+                dispatch(setChaptersCache({ key: currentCacheKey, data: localData }));
                 setLoading(false);
                 return;
             }
 
-            setLoading(true);
+            // 3. API Call
             try {
-                const token = localStorage.getItem('token');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                // Ensure default values to avoid 404 or bad request
+                const ex = examVal || 'jee-mains';
+                const sub = subjectVal || 'physics';
 
-                const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}`, {
-                    headers
-                });
-                const data = await res.json();
+                const res = await api.get(`/api/v1/resources/chapters?exam=${ex}&subject=${sub}`);
+                const data = res.data;
 
                 if (data.status === 'success') {
-                    setChapterList(data.data.chapters);
-                    dispatch(setChaptersCache({ key: cacheKey, data: data.data.chapters }));
-                    setCachedData(cacheKey, data.data.chapters); // Save to storage
+                    setChapters(data.data.chapters);
+                    dispatch(setChaptersCache({ key: currentCacheKey, data: data.data.chapters }));
+                    setCachedData(currentCacheKey, data.data.chapters); // Save to storage
                 } else {
-                    setError(data.message || 'Failed to load chapters');
+                    setError('Failed to fetch chapters');
                 }
             } catch (err) {
                 console.error(err);
-                setError('Something went wrong matching chapters');
+                setError('Error loading chapters');
             } finally {
                 setLoading(false);
             }
         };
 
-        if (exam && subject) {
+        if (examVal && subjectVal) {
             fetchChapters();
         }
-    }, [exam, subject, cachedChapters, dispatch, cacheKey]);
+    }, [exam, subject, cachedChapters, dispatch]); // Updated dependencies to use exam, subject directly
 
     if (loading) return <div className="page container"><h2>Loading chapters...</h2></div>;
     if (error) return <div className="page container"><h2>Error: {error}</h2></div>;

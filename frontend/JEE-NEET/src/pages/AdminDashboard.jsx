@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { API_BASE_URL } from '../utils/config';
+import { useState, useEffect, useRef } from 'react';
+import api from '../utils/api';
 
 const AdminDashboard = () => {
     const [step, setStep] = useState(1);
@@ -57,10 +57,10 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions`, {
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                     // Content-Type not set for FormData
                 },
                 body: formData
@@ -96,11 +96,11 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources`, {
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                 },
                 body: JSON.stringify(payload)
             });
@@ -134,7 +134,7 @@ const AdminDashboard = () => {
         const s = subjectOverride || manageSubject;
         if (!e || !s) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${e}&subject=${s}`);
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / chapters ? exam = ${e}& subject=${s} `);
             const data = await res.json();
             setChapterList(data.data.chapters);
         } catch (err) {
@@ -151,14 +151,14 @@ const AdminDashboard = () => {
 
         if (!e || !s || !c) return;
 
-        const cacheKey = `${e}-${s}-${c}`;
+        const cacheKey = `${e} -${s} -${c} `;
         if (questionsCache.current[cacheKey]) {
             setQuestionsList(questionsCache.current[cacheKey]);
             return; // Use cached data
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions?exam=${e}&subject=${s}&chapter=${c}`);
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions ? exam = ${e}& subject=${s}& chapter=${c} `);
             const data = await res.json();
             questionsCache.current[cacheKey] = data.data.questions; // Cache the result
             setQuestionsList(data.data.questions);
@@ -171,11 +171,11 @@ const AdminDashboard = () => {
         if (!newChapterName || !manageChapter) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters/rename`, {
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / chapters / rename`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                 },
                 body: JSON.stringify({
                     exam: manageExam,
@@ -199,22 +199,19 @@ const AdminDashboard = () => {
     };
 
     const handleDeleteChapter = async () => {
-        if (!window.confirm(`Are you sure you want to delete chapter "${manageChapter}" and ALL its content? This cannot be undone.`)) return;
+        if (!window.confirm(`Are you sure you want to delete chapter "${manageChapter}" and ALL its content ? This cannot be undone.`)) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters/delete`, {
-                method: 'POST',
+            const res = await api.post('/api/v1/resources/chapters/delete', {
+                exam: manageExam,
+                subject: manageSubject.toLowerCase(),
+                chapter: manageChapter
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                 },
-                body: JSON.stringify({
-                    exam: manageExam,
-                    subject: manageSubject.toLowerCase(),
-                    chapter: manageChapter
-                })
             });
-            const data = await res.json();
+            const data = res.data;
             if (data.status === 'success') {
                 alert(data.message);
                 setManageChapter('');
@@ -223,7 +220,7 @@ const AdminDashboard = () => {
                 alert(data.message);
             }
         } catch (err) {
-            alert(err.message);
+            alert(err.response?.data?.message || err.message);
         }
     };
 
@@ -231,22 +228,21 @@ const AdminDashboard = () => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await api.delete(`/ api / v1 / resources / questions / ${id} `, {
+                headers: { 'Authorization': `Bearer ${token} ` }
             });
 
-            if (res.ok) {
+            if (res.status === 200) { // Axios uses status codes directly
                 const newList = questionsList.filter(q => q._id !== id);
                 setQuestionsList(newList);
 
                 // Update Cache
-                const cacheKey = `${manageExam}-${manageSubject}-${manageChapter}`;
+                const cacheKey = `${manageExam} -${manageSubject} -${manageChapter} `;
                 if (questionsCache.current[cacheKey]) {
                     questionsCache.current[cacheKey] = newList;
                 }
             } else {
-                const data = await res.json().catch(() => ({ message: 'Failed to delete' }));
+                const data = res.data;
                 alert(data.message || 'Failed to delete question');
             }
         } catch (err) {
@@ -269,10 +265,10 @@ const AdminDashboard = () => {
                 formData.append('image', editQuestionImage);
             }
 
-            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/${editingQuestion._id}`, {
+            const res = await fetch(`${API_BASE_URL} /api/v1 / resources / questions / ${editingQuestion._id} `, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                 },
                 body: formData
             });
@@ -283,7 +279,7 @@ const AdminDashboard = () => {
                 setEditQuestionImage(null);
 
                 // Invalidate Cache for current selection so it refetches fresh data
-                const cacheKey = `${manageExam}-${manageSubject}-${manageChapter}`;
+                const cacheKey = `${manageExam} -${manageSubject} -${manageChapter} `;
                 delete questionsCache.current[cacheKey];
 
                 fetchQuestions();
@@ -300,13 +296,13 @@ const AdminDashboard = () => {
             {/* Tabs */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
                 <button
-                    className={`cbt-btn ${activeTab === 'add' ? '' : 'secondary'}`}
+                    className={`cbt - btn ${activeTab === 'add' ? '' : 'secondary'} `}
                     onClick={() => setActiveTab('add')}
                 >
                     Add New Content
                 </button>
                 <button
-                    className={`cbt-btn ${activeTab === 'manage' ? '' : 'secondary'}`}
+                    className={`cbt - btn ${activeTab === 'manage' ? '' : 'secondary'} `}
                     onClick={() => setActiveTab('manage')}
                 >
                     Manage Existing
@@ -410,9 +406,9 @@ const AdminDashboard = () => {
                                             <input
                                                 key={opt}
                                                 type="text"
-                                                placeholder={`Option ${opt}`}
-                                                value={questionData[`option${opt}`]}
-                                                onChange={(e) => setQuestionData({ ...questionData, [`option${opt}`]: e.target.value })}
+                                                placeholder={`Option ${opt} `}
+                                                value={questionData[`option${opt} `]}
+                                                onChange={(e) => setQuestionData({ ...questionData, [`option${opt} `]: e.target.value })}
                                                 required
                                                 style={{ padding: '0.8rem', background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '8px' }}
                                             />

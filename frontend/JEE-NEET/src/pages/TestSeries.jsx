@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getCachedData, setCachedData } from '../utils/apiCache';
-import { API_BASE_URL } from '../utils/config';
+import api from '../utils/api';
+import { testSeries } from '../data/testSeries';
 
 const TestSeries = () => {
     console.log("TestSeries Component Rendered");
@@ -25,8 +26,8 @@ const TestSeries = () => {
             try {
                 // Fetch chapters for the special subject 'Test Series'
                 console.log(`Fetching tests for ${selectedExam}`);
-                const res = await fetch(`${API_BASE_URL}/api/v1/resources/chapters?exam=${selectedExam}&subject=${encodeURIComponent('test series')}`);
-                const data = await res.json();
+                const res = await api.get(`/api/v1/resources/chapters?exam=${selectedExam}&subject=${encodeURIComponent('test series')}`);
+                const data = res.data; // Axios typically returns data in res.data
                 console.log("Fetch result:", data);
 
                 if (data.status === 'success' && Array.isArray(data.data.chapters)) {
@@ -50,6 +51,25 @@ const TestSeries = () => {
 
         fetchTests();
     }, [selectedExam]);
+
+    // Fetch available chapters logic (simplified for determining "Full Syllabus" vs "Chapterwise")
+    useEffect(() => {
+        const fetchChapters = async () => {
+            // Example call to verify backend connectivity or load dynamic data
+            try {
+                // Determine implicit exam/subject or fetch list.
+                // For test series list, we might want to check available content.
+                // Currently just fetching to test connectivity.
+                const res = await api.get('/api/v1/resources/chapters?exam=jee-mains&subject=physics');
+                if (res.data.status === 'success') {
+                    // console.log("Backend Connected for TestSeries");
+                }
+            } catch (err) {
+                console.error("TestSeries backend check failed", err);
+            }
+        };
+        fetchChapters();
+    }, []);
 
     if (loading) return <div className="container page" style={{ textAlign: 'center', paddingTop: '4rem', color: 'white' }}>Loading Tests...</div>;
 

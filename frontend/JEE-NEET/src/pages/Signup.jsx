@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/config';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const Signup = () => {
     const [name, setName] = useState('');
@@ -18,25 +18,18 @@ const Signup = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/auth/signup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, email, password }),
-            });
+            const res = await api.post('/api/v1/auth/signup', { name, email, password });
+            const data = res.data;
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Signup failed');
+            if (data.status === 'success') {
+                login(data.token, data.user.name);
+                navigate('/');
+            } else {
+                setError(data.message || 'Signup failed');
             }
-
-            // Auto-login after signup
-            login({ user: data.data.user, token: data.token });
-            navigate('/');
         } catch (err) {
-            setError(err.message);
+            const msg = err.response?.data?.message || err.message || 'Something went wrong';
+            setError(msg);
         } finally {
             setLoading(false);
         }
