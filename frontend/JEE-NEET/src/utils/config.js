@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Hardcoded Backend URL as requested
+export const API_BASE_URL = 'https://jee-neet-5ie5.onrender.com';
 console.log("-----------------------------------------");
 console.log("🚀 FRONTEND CONFIG LOADED");
 console.log("Environment:", import.meta.env.MODE);
