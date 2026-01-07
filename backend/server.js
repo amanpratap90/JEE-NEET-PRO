@@ -13,6 +13,9 @@ require('./src/config/redis'); // This will trigger connection
 const path = require('path');
 
 const app = express();
+// Trust Proxy for Render/Vercel (Load Balancers)
+app.set('trust proxy', 1);
+
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
