@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 
 import { exams } from '../data/Exams';
 
-import PDFViewer from '../components/PDFViewer';
+import PDFViewer from '../Components/PDFViewer';
 
 const ResourceList = ({ type, title }) => {
     const { exam } = useParams();
