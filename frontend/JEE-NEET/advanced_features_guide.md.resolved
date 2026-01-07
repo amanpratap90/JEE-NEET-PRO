@@ -1,0 +1,270 @@
+# Advanced Features Implementation Guide
+
+This document provides the specific code to implement **Google OAuth**, **Route Protection (Login Wall)**, and the **Admin Dashboard** for uploading resources.
+
+---
+
+## 🔒 Feature 1: Frontend Route Protection (The Login Wall)
+
+We want to prevent access to `/jee`, `/neet`, etc., unless the user is logged in.
+
+### 1. Auth Context (`src/context/AuthContext.jsx`)
+Create this file to manage user state globally.
+
+```javascript
+import { createContext, useContext, useState, useEffect } from 'react';
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if token exists in localStorage
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = (data) => {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setUser(data.user);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    window.location.href = '/login';
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
+```
+
+### 2. Protected Route Component (`src/components/ProtectedRoute.jsx`)
+
+```javascript
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+const ProtectedRoute = () => {
+  const { user } = useAuth();
+
+  // If user is not logged in, redirect to login page
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+export default ProtectedRoute;
+```
+
+### 3. Update [App.jsx](file:///c:/Users/ak532/Desktop/JEE-NEET/frontend/JEE-NEET/src/App.jsx)
+Wrap your exam routes with `ProtectedRoute`.
+
+```javascript
+// ... imports
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login'; // You need to create this
+
+// ... inside App component
+return (
+  <AuthProvider>
+    <BrowserRouter>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        
+        {/* PROTECTED ROUTES */}
+        <Route element={<ProtectedRoute />}>
+           <Route path="/:exam" element={<ExamDashboard />} />
+           <Route path="/:exam/subjects" element={<Subjects />} />
+           {/* ... all other resource routes ... */}
+        </Route>
+      </Routes>
+      <Footer />
+    </BrowserRouter>
+  </AuthProvider>
+);
+```
+
+---
+
+## 🔑 Feature 2: Google OAuth Implementation
+
+### Backend: Passport.js Setup
+
+**1. Install Dependencies**
+```bash
+npm install passport passport-google-oauth20
+```
+
+**2. Configure Passport (`backend/src/config/passport.js`)**
+
+```javascript
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('../models/User');
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/api/auth/google/callback"
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Check if user exists
+      let user = await User.findOne({ googleId: profile.id });
+      
+      if (user) {
+        return done(null, user);
+      }
+
+      // If not, create new user
+      user = await User.create({
+        googleId: profile.id,
+        name: profile.displayName,
+        email: profile.emails[0].value,
+        role: 'user'
+      });
+      
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  }
+));
+```
+
+**3. Auth Routes (`backend/src/routes/authRoutes.js`)**
+
+```javascript
+const passport = require('passport');
+const jwt = require('jsonwebtoken');
+
+// 1. Redirect user to Google
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// 2. Google redirects back here
+router.get('/google/callback', 
+  passport.authenticate('google', { session: false }),
+  (req, res) => {
+    // User is authenticated, generate JWT
+    const token = jwt.sign({ id: req.user._id, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    
+    // Redirect to frontend with token
+    res.redirect(`http://localhost:5173/login?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+  }
+);
+```
+
+---
+
+## 🛠️ Feature 3: Admin Dashboard (Uploads)
+
+### Backend: Admin Upload API
+
+**1. Install Multer (for file handling)**
+```bash
+npm install multer
+```
+
+**2. Upload Middleware (`backend/src/middleware/uploadMiddleware.js`)**
+
+```javascript
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Make sure this folder exists
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ storage });
+module.exports = upload;
+```
+
+**3. Admin Routes (`backend/src/routes/adminRoutes.js`)**
+
+```javascript
+const express = require('express');
+const router = express.Router();
+const upload = require('../middleware/uploadMiddleware');
+const { protect, admin } = require('../middleware/authMiddleware'); // You need to add 'admin' check middleware
+
+// Upload Question Bank (JSON or CSV)
+router.post('/upload/questions', protect, admin, upload.single('file'), (req, res) => {
+   // Logic to parse JSON/CSV and insert into Question DB
+   res.send('Questions Uploaded');
+});
+
+// Upload Notes (PDFs)
+router.post('/upload/notes', protect, admin, upload.single('pdf'), (req, res) => {
+   // Logic to save file path to Notes DB
+   const filePath = req.file.path;
+   // User.create... or Note.create({ url: filePath })
+   res.send('Note Uploaded');
+});
+
+module.exports = router;
+```
+
+### Frontend: Admin Page (`src/pages/AdminDashboard.jsx`)
+
+```javascript
+import { useState } from 'react';
+
+const AdminDashboard = () => {
+  const [file, setFile] = useState(null);
+
+  const handleUpload = async (endpoint) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    await fetch(`http://localhost:5000/api/admin/upload/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+    alert('Upload Successful');
+  };
+
+  return (
+    <div className="container page">
+      <h1>Admin Dashboard</h1>
+      
+      <div className="upload-section">
+        <h3>Upload Question Bank</h3>
+        <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+        <button className="auth-btn" onClick={() => handleUpload('questions')}>Upload Questions</button>
+      </div>
+
+      <div className="upload-section">
+         <h3>Upload Notes (PDF)</h3>
+         <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+         <button className="auth-btn" onClick={() => handleUpload('notes')}>Upload Notes</button>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
+```
