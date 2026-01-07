@@ -5,8 +5,8 @@ import Footer from "./layout/Footer"
 import ScrollToTop from "./Components/ScrollToTop";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminRoute from "./components/AdminRoute";
+import ProtectedRoute from "./Components/ProtectedRoute";
+import AdminRoute from "./Components/AdminRoute";
 
 import TestSeries from "./pages/TestSeries";
 
