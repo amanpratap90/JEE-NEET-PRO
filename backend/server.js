@@ -30,8 +30,27 @@ app.use(cookieParser());
 // app.use(xss()); // Data sanitization against XSS (Disabled due to req.query read-only error)
 
 // CORS
-// CORS - Allow all for debugging
-app.use(cors());
+const allowedOrigins = [
+    'https://jee-neet-5ie5.onrender.com',
+    'https://jee-neet-5ie5.onrender.co', // Handling user provided typo
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            console.log("Blocked by CORS:", origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 
 // Request Logger
 app.use((req, res, next) => {
