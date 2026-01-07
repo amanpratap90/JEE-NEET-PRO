@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer"
-import ScrollToTop from "./components/ScrollToTop";
+import ScrollToTop from "./components/scrollToTop";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
