@@ -285,7 +285,7 @@ function Practice() {
                     ))}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem', width: '100%', justifyContent: 'center' }}>
+                <div className="practice-actions" style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem', width: '100%', justifyContent: 'center' }}>
                     <button
                         className="auth-btn"
                         style={{ backgroundColor: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-primary)' }}

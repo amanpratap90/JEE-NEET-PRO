@@ -915,3 +915,90 @@ main {
         overflow: visible;
     }
 }
+
+/* Mobile Responsiveness for Practice & Test Series */
+@media (max-width: 640px) {
+
+    /* Practice Page Buttons */
+    .practice-actions {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem !important;
+        /* Override inline gap if needed */
+        margin-top: 1.5rem !important;
+    }
+
+    .practice-actions button {
+        flex: 1 1 45%;
+        /* Buttons take up ~50% width each */
+        min-width: 120px;
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+
+    /* Test Series Layout Fixes */
+    .cbt-layout {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .cbt-main {
+        flex-direction: column;
+        overflow: visible;
+        display: block;
+        /* Stack vertically properly */
+    }
+
+    .question-area {
+        height: auto;
+        padding: 1rem 0.5rem;
+    }
+
+    .q-content-scroll {
+        max-height: 50vh;
+        /* Allow scrolling within question area if needed, or let it grow */
+        overflow-y: auto;
+    }
+
+    .question-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .action-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .left-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .cbt-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.8rem;
+    }
+
+    /* Side Panel / Question Palette */
+    .side-panel {
+        width: 100%;
+        height: auto;
+        max-height: 300px;
+        border-left: none;
+        border-top: 1px solid #334155;
+        margin-top: 2rem;
+    }
+
+    .question-grid {
+        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    }
+}
