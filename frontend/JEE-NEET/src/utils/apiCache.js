@@ -7,18 +7,18 @@ export const getCachedData = (key) => {
         console.log(`[Cache Hit - Memory] ${key}`);
         return apiCache.get(key);
     }
-    // 2. Check LocalStorage
+    // 2. Check SessionStorage
     try {
-        const item = localStorage.getItem(key);
+        const item = sessionStorage.getItem(key);
         if (item) {
-            console.log(`[Cache Hit - LocalStorage] ${key}`);
+            console.log(`[Cache Hit - SessionStorage] ${key}`);
             const parsed = JSON.parse(item);
             // Re-hydrate memory cache
             apiCache.set(key, parsed);
             return parsed;
         }
     } catch (e) {
-        console.warn("Failed to read from localStorage", e);
+        console.warn("Failed to read from sessionStorage", e);
     }
     return null;
 };
@@ -27,9 +27,9 @@ export const setCachedData = (key, data) => {
     console.log(`[Cache Set] ${key}`);
     apiCache.set(key, data);
     try {
-        localStorage.setItem(key, JSON.stringify(data));
+        sessionStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
-        console.warn("Failed to save to localStorage", e);
+        console.warn("Failed to save to sessionStorage", e);
     }
 };
 
@@ -37,7 +37,7 @@ export const setCachedData = (key, data) => {
 export const saveTestState = (testId, state) => {
     try {
         const key = `test_progress_${testId}`;
-        localStorage.setItem(key, JSON.stringify(state));
+        sessionStorage.setItem(key, JSON.stringify(state));
     } catch (e) {
         console.warn("Failed to save test state", e);
     }
@@ -46,7 +46,7 @@ export const saveTestState = (testId, state) => {
 export const getTestState = (testId) => {
     try {
         const key = `test_progress_${testId}`;
-        const item = localStorage.getItem(key);
+        const item = sessionStorage.getItem(key);
         return item ? JSON.parse(item) : null;
     } catch (e) {
         console.warn("Failed to load test state", e);
@@ -56,34 +56,38 @@ export const getTestState = (testId) => {
 
 export const clearTestState = (testId) => {
     try {
-        localStorage.removeItem(`test_progress_${testId}`);
+        sessionStorage.removeItem(`test_progress_${testId}`);
     } catch (e) { }
 };
 
 export const clearCache = () => {
     apiCache.clear();
-    // Optional: decided if we want to clear all localStorage or just api keys.
-    // For now, leaving localStorage alone on manual clear unless specified.
+    // Optional: clear sessionStorage relevant keys if needed on manual clear
 };
 
 export const removeCachedData = (key) => {
     console.log(`[Cache Remove] ${key}`);
     apiCache.delete(key);
     try {
-        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
     } catch (e) { }
 };
 
 // Cache Versioning (Global Busting)
-const CACHE_VERSION = 'v1.0.1'; // Increment this to force-clear client caches
+const CACHE_VERSION = 'v1.0.2'; // Increment to force-clear client caches
 
 export const checkCacheVersion = () => {
     try {
+        // We check local storage for version to clear stale local storage if we are migrating?
+        // Or we use session storage for versioning too?
+        // Let's keep versioning in localStorage to handle "across tabs" upgrades or just use sessionStorage.
+        // Actually, if we are migrating FROM localStorage to sessionStorage, we should probably clear the old localStorage junk once.
+
         const storedVersion = localStorage.getItem('app_cache_version');
         if (storedVersion !== CACHE_VERSION) {
             console.log(`[Cache Version Mismatch] Clearing stale data. New: ${CACHE_VERSION}, Old: ${storedVersion}`);
 
-            // Clear only content keys, preserve auth (token, user)
+            // Clear legacy localStorage data keys if they exist
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -96,9 +100,12 @@ export const checkCacheVersion = () => {
                     keysToRemove.push(key);
                 }
             }
-
             keysToRemove.forEach(k => localStorage.removeItem(k));
-            apiCache.clear(); // Clear memory too
+
+            // Also clear sessionStorage
+            sessionStorage.clear();
+
+            apiCache.clear();
 
             localStorage.setItem('app_cache_version', CACHE_VERSION);
             console.log(`[Cache Cleared] Removed ${keysToRemove.length} stale entries.`);

@@ -453,6 +453,44 @@ main {
     }
 }
 
+@media (max-width: 480px) {
+    .question-card {
+        padding: 1rem;
+        width: 100%;
+    }
+
+    .question-text {
+        font-size: 1.1rem;
+        word-break: break-word;
+        /* Ensure long words dont overflow */
+        margin-bottom: 1.5rem;
+    }
+
+    .question-card h2 {
+        /* Catch any other headers */
+        font-size: 1.25rem;
+        word-break: break-word;
+    }
+
+    .option-btn {
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+        min-height: 50px;
+    }
+
+    .options-grid {
+        gap: 1rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .navbar {
+        padding: 0 1rem;
+    }
+}
+
 /* Blinking Animation */
 @keyframes blink {
     0% {
