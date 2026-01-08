@@ -5,7 +5,7 @@ import api from '../utils/api';
 
 import { exams } from '../data/Exams';
 
-import PDFViewer from '../components/PDFViewer';
+import PDFViewer from '../Components/PDFViewer';
 
 const ResourceList = ({ type, title }) => {
     const { exam } = useParams();
