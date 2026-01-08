@@ -36,7 +36,7 @@ app.use(cookieParser());
 const allowedOrigins = [
     'https://jee-neet-pro.onrender.com',
     'https://jee-neet-pro.onrender.co', // Handling user provided typo
-    'http://localhost:5173',
+   
     'http://localhost:3000'
 ];
 
