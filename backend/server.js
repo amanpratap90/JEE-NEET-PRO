@@ -34,10 +34,8 @@ app.use(cookieParser());
 
 // CORS
 const allowedOrigins = [
-    'https://jee-neet-5ie5.onrender.com',
-    'https://jee-neet-5ie5.onrender.co', // Handling user provided typo
-    'http://localhost:5173',
-    'http://localhost:3000'
+    'https://jee-neet-pro.onrender.com',
+    
 ];
 
 app.use(cors({
