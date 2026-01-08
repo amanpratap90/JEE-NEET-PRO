@@ -1,5 +1,5 @@
 // Hardcoded Backend URL as requested
-export const API_BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = 'https://jee-neet-pro.onrender.com';
 console.log("-----------------------------------------");
 console.log("🚀 FRONTEND CONFIG LOADED");
 console.log("Environment:", import.meta.env.MODE);
