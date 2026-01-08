@@ -68,62 +68,70 @@ const MockTestPage = () => {
                 }
 
                 try {
-                    // Fetch questions for this "Test Series" chapter
-                    const res = await api.get(`/api/v1/resources/questions`, {
-                        params: {
-                            exam: exam.toLowerCase(),
-                            subject: 'test series', // Assuming 'test series' is the subject for mock tests
-                            chapter: routeTestId
+                    const examConfig = exam.toLowerCase().includes('jee') ?
+                        ["Physics", "Chemistry", "Mathematics"] :
+                        ["Physics", "Chemistry", "Biology"];
+
+                    // Also fetch "test series" subject as a fallback/catch-all if used by backend
+                    // But primarily fetch the core subjects
+                    const fetchPromises = examConfig.map(sub =>
+                        api.get(`/api/v1/resources/questions`, {
+                            params: {
+                                exam: exam.toLowerCase(),
+                                subject: sub,
+                                chapter: routeTestId
+                            }
+                        }).catch(e => ({ data: { status: 'fail' } })) // Catch individually to allow partial success
+                    );
+
+                    // Add legacy "test series" fetch just in case
+                    fetchPromises.push(api.get(`/api/v1/resources/questions`, {
+                        params: { exam: exam.toLowerCase(), subject: 'test series', chapter: routeTestId }
+                    }).catch(e => ({ data: { status: 'fail' } })));
+
+                    const results = await Promise.all(fetchPromises);
+
+                    let allQuestions = [];
+                    results.forEach(res => {
+                        if (res.data && res.data.status === 'success' && Array.isArray(res.data.data.questions)) {
+                            allQuestions = [...allQuestions, ...res.data.data.questions];
                         }
                     });
-                    const data = res.data; // Axios puts response data in .data
 
-                    if (data.status === 'success') {
-                        // 1. Group questions by "subject" 
-                        // The API returns a flat list of questions. Each question *should* have a 'subject' field.
-                        // If not, we might need to rely on the backend to separate them or have a default fallback.
-                        // Assuming questions have { ... , subject: 'Physics' } etc.
+                    // Deduplicate by _id
+                    const uniqueQuestions = Array.from(new Map(allQuestions.map(item => [item._id, item])).values());
 
-                        const rawQuestions = data.data.questions;
-                        const grouped = {};
+                    // Now group them
+                    const grouped = {};
+                    examConfig.forEach(sub => grouped[sub] = []);
 
-                        // Default subjects order based on exam
-                        const examConfig = exam.toLowerCase().includes('jee') ?
-                            ["Physics", "Chemistry", "Mathematics"] :
-                            ["Physics", "Chemistry", "Biology"];
+                    uniqueQuestions.forEach(q => {
+                        let subName = q.subject;
+                        const match = examConfig.find(s => s.toLowerCase() === subName.toLowerCase());
+                        if (match) {
+                            grouped[match].push(q);
+                        } else {
+                            // Only put into fallback if strictly needed. 
+                            // If fetching by subject, we expect correct subjects. 
+                            // If it came from 'test series' subject call, it might have weird subject tags.
+                            // Let's try to categorize by content? No too hard.
+                            // Just assign to first subject if completely unknown?
+                            // Or better: check if title/text implies subject? No.
+                            if (subName.toLowerCase().includes('math')) grouped[examConfig[2]].push(q);
+                            else if (subName.toLowerCase().includes('bio')) grouped[examConfig[2]].push(q);
+                            else if (subName.toLowerCase().includes('chem')) grouped[examConfig[1]].push(q);
+                            else grouped[examConfig[0]].push(q);
+                        }
+                    });
 
-                        // Initialize groups
-                        examConfig.forEach(sub => grouped[sub] = []);
+                    const subjectsList = examConfig.filter(s => grouped[s].length > 0);
 
-                        // Distribute questions
-                        rawQuestions.forEach(q => {
-                            // Normalize subject case
-                            let subName = q.subject || 'Physics';
-                            // Try to match with our config keys
-                            const match = examConfig.find(s => s.toLowerCase() === subName.toLowerCase());
-                            if (match) {
-                                grouped[match].push(q);
-                            } else {
-                                // Fallback for unknown subjects or if subject field is missing/different
-                                // Use the first subject or a "General" category?
-                                // Let's just put them in the first subject for now or handle 'Maths' vs 'Mathematics' mapping
-                                if (subName.toLowerCase().includes('math')) grouped[examConfig[2]].push(q);
-                                else if (subName.toLowerCase().includes('bio')) grouped[examConfig[2]].push(q); // For NEET
-                                else if (subName.toLowerCase().includes('chem')) grouped[examConfig[1]].push(q);
-                                else if (subName.toLowerCase().includes('phy')) grouped[examConfig[0]].push(q);
-                                else grouped[examConfig[0]].push(q);
-                            }
-                        });
+                    const finalQuestionsData = {};
+                    subjectsList.forEach(s => finalQuestionsData[s] = grouped[s]);
 
+                    // If empty, mock it for UI testing? No.
 
-                        const subjectsList = examConfig.filter(s => grouped[s].length > 0);
-                        // If no questions match expected subjects, we might have an issue. 
-                        // But let's assume at least some match or we used the fallback.
-                        // If all empty, maybe fallback to "Questions"? No, keep structure.
-
-                        const finalQuestionsData = {};
-                        subjectsList.forEach(s => finalQuestionsData[s] = grouped[s]);
-
+                    if (subjectsList.length > 0) {
                         setCachedData(cacheKey, { questions: finalQuestionsData, subjects: subjectsList });
 
                         dispatch(initializeTest({
@@ -131,6 +139,8 @@ const MockTestPage = () => {
                             questions: finalQuestionsData,
                             subjects: subjectsList
                         }));
+                    } else {
+                        console.warn("No questions found for any subject.");
                     }
                 } catch (err) {
                     console.error("Failed to load test", err);
