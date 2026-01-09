@@ -16,7 +16,7 @@ export default function Footer() {
             <div className="footer-bottom">
                 <p>&copy; {new Date().getFullYear()} IIT JEE Prep. All rights reserved.</p>
                 <div className="footer-socials">
-                    <span>Made with <span style={{ color: '#ef4444' }}>❤</span> for Aspirants</span>
+                    <span>Made By <span style={{ color: '#ef4444' }}>IIITIAN❤</span> for JEE-NEET Aspirants</span>
                 </div>
             </div>
         </footer>
