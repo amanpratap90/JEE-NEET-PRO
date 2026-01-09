@@ -74,7 +74,7 @@ export const removeCachedData = (key) => {
 };
 
 // Cache Versioning (Global Busting)
-const CACHE_VERSION = 'v1.0.2'; // Increment to force-clear client caches
+const CACHE_VERSION = 'v1.0.3'; // Increment to force-clear client caches
 
 export const checkCacheVersion = () => {
     try {

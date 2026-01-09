@@ -72,76 +72,76 @@ const MockTestPage = () => {
                         ["Physics", "Chemistry", "Mathematics"] :
                         ["Physics", "Chemistry", "Biology"];
 
-                    // Also fetch "test series" subject as a fallback/catch-all if used by backend
-                    // But primarily fetch the core subjects
-                    const fetchPromises = examConfig.map(sub =>
-                        api.get(`/api/v1/resources/questions`, {
-                            params: {
-                                exam: exam.toLowerCase(),
-                                subject: sub,
-                                chapter: routeTestId
-                            }
-                        }).catch(e => ({ data: { status: 'fail' } })) // Catch individually to allow partial success
-                    );
-
-                    // Add legacy "test series" fetch just in case
-                    fetchPromises.push(api.get(`/api/v1/resources/questions`, {
-                        params: { exam: exam.toLowerCase(), subject: 'test series', chapter: routeTestId }
-                    }).catch(e => ({ data: { status: 'fail' } })));
-
-                    const results = await Promise.all(fetchPromises);
-
-                    let allQuestions = [];
-                    results.forEach(res => {
-                        if (res.data && res.data.status === 'success' && Array.isArray(res.data.data.questions)) {
-                            allQuestions = [...allQuestions, ...res.data.data.questions];
+                    // Primary Fetch: Get all questions for this "Test Series" chapter
+                    // They should have subject='test series' and section='Physics', etc.
+                    const res = await api.get(`/api/v1/resources/questions`, {
+                        params: {
+                            exam: exam.toLowerCase(),
+                            subject: 'test series',
+                            chapter: routeTestId
                         }
                     });
 
-                    // Deduplicate by _id
+                    let allQuestions = [];
+                    if (res.data.status === 'success') {
+                        allQuestions = res.data.data.questions;
+                    }
+
+                    // ALWAYS fetch legacy subject-based questions to support mixed data (old & new)
+                    const fetchPromises = examConfig.map(sub =>
+                        api.get(`/api/v1/resources/questions`, {
+                            params: { exam: exam.toLowerCase(), subject: sub, chapter: routeTestId }
+                        }).catch(e => ({ data: { status: 'fail' } }))
+                    );
+                    const legacyResults = await Promise.all(fetchPromises);
+                    legacyResults.forEach(r => {
+                        if (r.data && r.data.status === 'success') {
+                            allQuestions = [...allQuestions, ...r.data.data.questions];
+                        }
+                    });
+
+                    // Deduplicate
                     const uniqueQuestions = Array.from(new Map(allQuestions.map(item => [item._id, item])).values());
 
-                    // Now group them
+                    // Grouping Logic
                     const grouped = {};
                     examConfig.forEach(sub => grouped[sub] = []);
 
                     uniqueQuestions.forEach(q => {
-                        let subName = q.subject;
-                        const match = examConfig.find(s => s.toLowerCase() === subName.toLowerCase());
+                        // Use 'section' if available (new schema), otherwise 'subject' (legacy)
+                        // Ensure comparison is case-insensitive
+                        const targetCategory = q.section || q.subject;
+
+                        // Find matches in examConfig (e.g. 'Physics' matches 'physics')
+                        const match = examConfig.find(s => s.toLowerCase() === targetCategory.toLowerCase());
+
                         if (match) {
                             grouped[match].push(q);
                         } else {
-                            // Only put into fallback if strictly needed. 
-                            // If fetching by subject, we expect correct subjects. 
-                            // If it came from 'test series' subject call, it might have weird subject tags.
-                            // Let's try to categorize by content? No too hard.
-                            // Just assign to first subject if completely unknown?
-                            // Or better: check if title/text implies subject? No.
-                            if (subName.toLowerCase().includes('math')) grouped[examConfig[2]].push(q);
-                            else if (subName.toLowerCase().includes('bio')) grouped[examConfig[2]].push(q);
-                            else if (subName.toLowerCase().includes('chem')) grouped[examConfig[1]].push(q);
+                            // Fallback categorization for messy data
+                            if (targetCategory.toLowerCase().includes('math')) grouped[examConfig[2]].push(q);
+                            else if (targetCategory.toLowerCase().includes('bio')) grouped[examConfig[2]].push(q);
+                            else if (targetCategory.toLowerCase().includes('chem')) grouped[examConfig[1]].push(q);
                             else grouped[examConfig[0]].push(q);
                         }
                     });
 
                     const subjectsList = examConfig.filter(s => grouped[s].length > 0);
-
                     const finalQuestionsData = {};
                     subjectsList.forEach(s => finalQuestionsData[s] = grouped[s]);
 
-                    // If empty, mock it for UI testing? No.
-
                     if (subjectsList.length > 0) {
                         setCachedData(cacheKey, { questions: finalQuestionsData, subjects: subjectsList });
-
                         dispatch(initializeTest({
                             testId: routeTestId,
                             questions: finalQuestionsData,
                             subjects: subjectsList
                         }));
                     } else {
-                        console.warn("No questions found for any subject.");
+                        // Handle Empty State nicely
+                        alert("No questions found for this test. Please check Admin Dashboard.");
                     }
+
                 } catch (err) {
                     console.error("Failed to load test", err);
                 } finally {

@@ -12,6 +12,11 @@ const questionSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
+    section: {
+        type: String, // For Test Series: 'Physics', 'Chemistry', etc.
+        lowercase: true,
+        trim: true
+    },
     chapter: {
         type: String,
         required: [true, 'Chapter name is required'],

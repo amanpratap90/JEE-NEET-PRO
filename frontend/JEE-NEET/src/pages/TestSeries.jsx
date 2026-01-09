@@ -7,6 +7,7 @@ import { testSeries } from '../data/testSeries';
 const TestSeries = () => {
     console.log("TestSeries Component Rendered");
     const { exam } = useParams();
+    const navigate = useNavigate();
     const selectedExam = exam ? exam.toLowerCase() : "jee-mains";
     const displayExam = selectedExam.toUpperCase().replace('-', ' ');
     const [tests, setTests] = useState([]);
@@ -114,7 +115,7 @@ const TestSeries = () => {
                                 e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
                                 e.currentTarget.querySelector('.glow-bg').style.opacity = '0.05';
                             }}
-                            onClick={() => window.location.href = `/${selectedExam}/test-series/${encodeURIComponent(test.title)}`}
+                            onClick={() => navigate(`/${selectedExam}/test-series/${encodeURIComponent(test.title)}`)}
                         >
                             {/* Background Glow Effect */}
                             <div className="glow-bg" style={{
@@ -191,7 +192,18 @@ const TestSeries = () => {
                 ) : (
                     <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: 'rgba(30, 41, 59, 0.3)', borderRadius: '12px', border: '1px dashed #334155' }}>
                         <p style={{ color: '#94a3b8', fontSize: '1.2rem', marginBottom: '1rem' }}>No test series available yet.</p>
-                        <p style={{ color: '#64748b' }}>Check back later or contact your administrator.</p>
+                        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Check back later or contact your administrator.</p>
+                        <button
+                            className="auth-btn"
+                            onClick={() => {
+                                import('../utils/apiCache').then(({ removeCachedData }) => {
+                                    removeCachedData(`chapters-${selectedExam}-test-series`);
+                                    window.location.reload();
+                                });
+                            }}
+                        >
+                            Refresh List
+                        </button>
                     </div>
                 )}
             </div>
