@@ -3,6 +3,7 @@ const resourceController = require('../controllers/resourceController');
 const { protect, restrictTo } = require('../middlewares/authMiddleware');
 
 const upload = require('../middlewares/upload');
+const uploadZip = require('../middlewares/uploadZip');
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.use(restrictTo('admin'));
 
 router.post('/', resourceController.createResource);
 router.post('/questions', upload.single('image'), resourceController.createQuestion);
+router.post('/questions/bulk', uploadZip.single('file'), resourceController.bulkImportQuestions);
 
 router.route('/questions/:id')
     .patch(upload.single('image'), resourceController.updateQuestion)

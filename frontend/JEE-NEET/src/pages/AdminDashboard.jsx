@@ -10,6 +10,7 @@ const AdminDashboard = () => {
 
     // -- State --
     const [activeTab, setActiveTab] = useState('add'); // 'add' or 'manage'
+    const [addMode, setAddMode] = useState('question-bank'); // 'question-bank' or 'test-series'
 
     // Add Content State
     const [step, setStep] = useState(1);
@@ -24,6 +25,8 @@ const AdminDashboard = () => {
     });
     const [questionImage, setQuestionImage] = useState(null);
     const [fileData, setFileData] = useState({ title: '', description: '', fileUrl: '' });
+    const [bulkFile, setBulkFile] = useState(null);
+    const [isBulkUploading, setIsBulkUploading] = useState(false);
 
     // Manage Content State
     const [manageExam, setManageExam] = useState('');
@@ -47,6 +50,11 @@ const AdminDashboard = () => {
     const subjects = {
         'jee-mains': ['Physics', 'Chemistry', 'Maths', 'Test Series'],
         'neet': ['Physics', 'Chemistry', 'Biology', 'Test Series']
+    };
+
+    const qbSubjects = {
+        'jee-mains': ['Physics', 'Chemistry', 'Maths'],
+        'neet': ['Physics', 'Chemistry', 'Biology']
     };
 
     const testSections = {
@@ -272,6 +280,45 @@ const AdminDashboard = () => {
             }
         } catch (err) {
             alert(err.message);
+        }
+    };
+
+    const handleBulkSubmit = async (e) => {
+        e.preventDefault();
+        if (!bulkFile) return alert("Please upload a zip file");
+
+        const formData = new FormData();
+        formData.append('exam', exam);
+        formData.append('subject', subject.toLowerCase());
+        formData.append('chapter', chapter);
+        if (subject === 'Test Series' && testSection) {
+            formData.append('section', testSection);
+        }
+        formData.append('file', bulkFile);
+
+        setIsBulkUploading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/api/v1/resources/questions/bulk`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(data.message);
+                setBulkFile(null);
+                // Invalidate Cache
+                const finalSub = (subject === 'Test Series') ? 'test series' : subject.toLowerCase();
+                removeCachedData(`practice-questions-${exam}-${finalSub}-${chapter}`);
+                dispatch(invalidateCache(`practice-questions-${exam}-${finalSub}-${chapter}`));
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setIsBulkUploading(false);
         }
     };
 
@@ -501,11 +548,50 @@ const AdminDashboard = () => {
 
                     {step === 1 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            {/* Mode Selection */}
+                            <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid var(--card-border)', marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '1rem', color: 'var(--accent-teal)' }}>What are you adding?</label>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button
+                                        type="button"
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.8rem',
+                                            borderRadius: '8px',
+                                            border: addMode === 'question-bank' ? '1px solid var(--accent-cyan)' : '1px solid #334155',
+                                            background: addMode === 'question-bank' ? 'rgba(34, 211, 238, 0.1)' : '#0f172a',
+                                            color: addMode === 'question-bank' ? 'var(--accent-cyan)' : 'gray',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onClick={() => { setAddMode('question-bank'); setSubject(''); }}
+                                    >
+                                        📘 Chapter-wise Content
+                                    </button>
+                                    <button
+                                        type="button"
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.8rem',
+                                            borderRadius: '8px',
+                                            border: addMode === 'test-series' ? '1px solid var(--accent-teal)' : '1px solid #334155',
+                                            background: addMode === 'test-series' ? 'rgba(45, 212, 191, 0.1)' : '#0f172a',
+                                            color: addMode === 'test-series' ? 'var(--accent-teal)' : 'gray',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onClick={() => { setAddMode('test-series'); setSubject('Test Series'); }}
+                                    >
+                                        📝 Full Mock Test
+                                    </button>
+                                </div>
+                            </div>
+
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Exam</label>
                                 <select
                                     value={exam}
-                                    onChange={(e) => { setExam(e.target.value); setSubject(''); }}
+                                    onChange={(e) => { setExam(e.target.value); if (addMode === 'question-bank') setSubject(''); }}
                                     style={{ width: '100%', padding: '0.8rem', background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '8px' }}
                                 >
                                     <option value="">Select Exam</option>
@@ -513,7 +599,9 @@ const AdminDashboard = () => {
                                     <option value="neet">NEET</option>
                                 </select>
                             </div>
-                            {exam && (
+
+                            {/* Show Subject Dropdown ONLY for Question Bank Mode */}
+                            {exam && addMode === 'question-bank' && (
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Subject</label>
                                     <select
@@ -522,16 +610,24 @@ const AdminDashboard = () => {
                                         style={{ width: '100%', padding: '0.8rem', background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '8px' }}
                                     >
                                         <option value="">Select Subject</option>
-                                        {subjects[exam].map(sub => (
+                                        {qbSubjects[exam].map(sub => (
                                             <option key={sub} value={sub}>{sub}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
+
+                            {/* Helper text for Test Series */}
+                            {exam && addMode === 'test-series' && (
+                                <div style={{ padding: '0.8rem', background: 'rgba(45, 212, 191, 0.1)', border: '1px solid var(--accent-teal)', borderRadius: '8px', color: 'var(--accent-teal)', fontSize: '0.9rem' }}>
+                                    Adding content to <strong>Test Series</strong>. In the next step, you will specify the <strong>Test Name</strong>.
+                                </div>
+                            )}
+
                             <button
                                 className="auth-btn"
                                 onClick={handleNext}
-                                disabled={!exam || !subject || isNextLoading}
+                                disabled={!exam || (!subject && addMode === 'question-bank') || isNextLoading}
                             >
                                 {isNextLoading ? 'Loading...' : 'Next'}
                             </button>
@@ -573,20 +669,20 @@ const AdminDashboard = () => {
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Content Type</label>
                                 <select
-                                    value={subject === 'Test Series' ? 'questions' : uploadType}
+                                    value={uploadType}
                                     onChange={(e) => setUploadType(e.target.value)}
-                                    disabled={subject === 'Test Series'}
                                     style={{
                                         width: '100%',
                                         padding: '0.8rem',
-                                        background: subject === 'Test Series' ? '#0f172a' : '#1e293b',
-                                        color: subject === 'Test Series' ? 'gray' : 'white',
+                                        background: '#1e293b',
+                                        color: 'white',
                                         border: '1px solid #334155',
                                         borderRadius: '8px',
-                                        cursor: subject === 'Test Series' ? 'not-allowed' : 'pointer'
+                                        cursor: 'pointer'
                                     }}
                                 >
                                     <option value="questions">Questions (MCQ)</option>
+                                    <option value="bulk-zip">Bulk Upload (Zip)</option>
                                     {subject !== 'Test Series' && (
                                         <>
                                             <option value="notes">Notes (PDF)</option>
@@ -598,7 +694,7 @@ const AdminDashboard = () => {
                                 </select>
                                 {subject === 'Test Series' && (
                                     <p style={{ fontSize: '0.8rem', color: 'var(--accent-teal)', marginTop: '0.5rem' }}>
-                                        For Test Series, you can only add Questions (MCQ).
+                                        For Test Series, use <strong>Questions (MCQ)</strong> for single entry or <strong>Bulk Upload (Zip)</strong> for mass import.
                                     </p>
                                 )}
                             </div>
@@ -621,7 +717,60 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            {uploadType === 'questions' ? (
+                            {uploadType === 'bulk-zip' ? (
+                                <form onSubmit={handleBulkSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                                    {/* Test Series Section Selector for Bulk Upload */}
+                                    {subject === 'Test Series' && (
+                                        <div style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--accent-teal)' }}>
+                                                Select Section for this Bulk Upload
+                                            </label>
+                                            <select
+                                                value={testSection}
+                                                onChange={(e) => setTestSection(e.target.value)}
+                                                required
+                                                style={{ width: '100%', padding: '0.8rem', background: '#0f172a', color: 'white', border: '1px solid var(--accent-teal)', borderRadius: '8px' }}
+                                            >
+                                                <option value="">Select Section (Physics/Chem/Math)</option>
+                                                {(testSections[exam] || []).map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                            <p style={{ fontSize: '0.8rem', color: 'gray', marginTop: '0.5rem' }}>
+                                                All questions in this Zip will be added to the <strong>{testSection || '...'}</strong> section of this Mock Test.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div style={{ padding: '2rem', border: '2px dashed #334155', borderRadius: '8px', textAlign: 'center', background: '#0f172a' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+                                        <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Drag & Drop your .zip file here</p>
+                                        <input
+                                            type="file"
+                                            accept=".zip,.rar,.7z"
+                                            onChange={(e) => setBulkFile(e.target.files[0])}
+                                            required
+                                            style={{ color: 'white', margin: '0 auto', display: 'block' }}
+                                        />
+                                        <div style={{ marginTop: '1.5rem', textAlign: 'left', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#94a3b8' }}>
+                                            <strong>Instructions:</strong>
+                                            <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem' }}>
+                                                <li>Upload a single <code>.zip</code> file.</li>
+                                                <li>Directly inside, include <code>data.json</code> (list of questions).</li>
+                                                <li>Include images referenced in JSON in the same folder.</li>
+                                                <li><a href="#" style={{ color: 'var(--accent-teal)' }}>Download Sample Format</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button type="button" className="cbt-btn secondary" onClick={() => setStep(2)}>Back</button>
+                                        <button type="submit" className="auth-btn" disabled={isBulkUploading}>
+                                            {isBulkUploading ? 'Uploading & Optimizing...' : 'Upload Zip'}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : uploadType === 'questions' ? (
                                 <form onSubmit={handleQuestionSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     <textarea
                                         placeholder="Question Text"

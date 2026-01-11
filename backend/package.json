@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
@@ -24,6 +25,7 @@
     "mongoose": "^9.1.1",
     "multer": "^2.0.2",
     "redis": "^5.10.0",
+    "sharp": "^0.34.5",
     "xss-clean": "^0.1.4"
   }
 }

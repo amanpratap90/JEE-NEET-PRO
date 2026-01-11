@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, memo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../utils/api'; // Import the axios instance
+import { API_BASE_URL } from '../utils/config';
 import { getCachedData, setCachedData, saveTestState, getTestState } from '../utils/apiCache'; // Reusing saveTestState for practice too
 import {
     setQuestionIndex,
@@ -270,6 +271,26 @@ function Practice() {
                 </div>
 
                 <h2 className="question-text">{questionText}</h2>
+
+                {currentQuestion.image && (
+                    <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+                        <img
+                            src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${API_BASE_URL}${currentQuestion.image}`}
+                            alt="Question"
+                            loading="lazy"
+                            style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', cursor: 'zoom-in' }}
+                            onClick={(e) => {
+                                if (e.target.style.maxHeight === '300px') {
+                                    e.target.style.maxHeight = 'none';
+                                    e.target.style.cursor = 'zoom-out';
+                                } else {
+                                    e.target.style.maxHeight = '300px';
+                                    e.target.style.cursor = 'zoom-in';
+                                }
+                            }}
+                        />
+                    </div>
+                )}
 
                 <div className="options-grid">
                     {currentQuestion?.options?.map((opt, index) => (
