@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { checkCacheVersion } from "./utils/apiCache";
 
 import TestSeries from "./pages/TestSeries";
+import HabitTracker from "./pages/HabitTracker";
 
 // Lazy load pages
 const Home = lazy(() => import("./pages/Home"));
@@ -47,6 +48,9 @@ const AppContent = () => {
       <Navbar />
       <ScrollToTop />
       <main>
+        {/* Persistent HabitTracker - stays mounted but hidden when not on /habits */}
+        <HabitTracker visible={location.pathname === '/habits'} />
+
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -55,6 +59,7 @@ const AppContent = () => {
 
             {/* Protected Routes: User must be logged in to access anything under /:exam */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/habits" element={<div />} /> {/* Dummy route to allow URL change, content is handled by persistent component */}
               <Route path="/test-series" element={<TestSeries />} />
               <Route path="/:exam" element={<ExamDashboard />} />
               <Route path="/:exam/subjects" element={<Subjects />} />

@@ -44,6 +44,22 @@ export default function Navbar() {
 
             <div className={`nav-links ${isOpen ? 'open' : ''}`}>
                 <Link
+                    to="/habits"
+                    className="blinking-link"
+                    style={{
+                        animationDelay: '0.1s',
+                        background: 'linear-gradient(to right, #22d3ee, #2dd4bf, #a78bfa)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        fontWeight: '900',
+                        textTransform: 'uppercase',
+                        filter: 'drop-shadow(0 0 5px rgba(45, 212, 191, 0.5))'
+                    }} // Stagger animation & Apply Glow
+                    onClick={() => setIsOpen(false)}
+                >
+                    Progress Tracker
+                </Link>
+                <Link
                     to="/test-series"
                     className="blinking-link"
                     onClick={() => setIsOpen(false)}
